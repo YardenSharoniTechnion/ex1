@@ -1,8 +1,9 @@
 #include "IsraeliQueue.h"
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
-IsraeliNode *israeliNodeCreate(void *element);
+/*IsraeliNode *israeliNodeCreate(void *element);
 
 IsraeliNode *israeliListCLone(IsraeliNode *firstNode);
 
@@ -74,13 +75,13 @@ void israeliListDestroy(IsraeliNode *list)
     }
     free(list);
     return;
-}
+}*/
 // We define israeliQueues as linked lists, meaning they're defined by their first element and friendship functions
 
 typedef struct IsraeliQueue_t
 {
-    IsraeliNode *dataList;
-    IsraeliNode *friendshipList;
+    void** dataArray;
+    FriendshipFunction* friendshipList;
     ComparisonFunction comparisonFunction;
     int friendshipThreshold;
     int rivalryThreshold;
@@ -91,7 +92,7 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction *friendship, ComparisonFuncti
 {
     IsraeliQueue queue = malloc(sizeof(IsraeliQueue_t));
     assert(queue);
-    queue->friendshipList = israeliListFromArray(friendship);
+    queue->friendshipList = malloc(friendship);
     queue->comparisonFunction = comparison;
     queue->friendshipThreshold = friendship_th;
     queue->rivalryThreshold = rivalry_th;
@@ -116,4 +117,19 @@ void IsraeliQueueDestroy(IsraeliQueue queue)
     israeliListDestroy(queue->dataList);
     free(queue);
     return;
+}
+
+//will attempt to make the last element bypass all elements it can.
+void IsraeliQueueLastElementBypass(IsraeliQueue IsraeliQueue) {
+    IsraeliNode* element = IsraeliQueue->dataList;
+    IsraeliNode* lastElement = NULL;
+    while (element != NULL) {
+        lastElement = element;
+        element = element->next;
+    }
+    bool friends = false;
+}
+
+IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue, void *) {
+       
 }
