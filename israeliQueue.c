@@ -114,6 +114,9 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
     bool* alreadyBlocked = malloc((elements) * sizeof(bool));
+    if (alreadyBlocked == NULL) {
+        return ISRAELIQUEUE_ALLOC_FAILED;
+    }
     IsraeliElement* dataArray = queue->dataArray;
     for (int i = 0; i < elements; i++) {
         alreadyBlocked[i] = false;
