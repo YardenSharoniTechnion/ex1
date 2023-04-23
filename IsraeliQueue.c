@@ -46,8 +46,8 @@ void elementArrCopy(IsraeliElement* destination, IsraeliElement* source) {
 
 // copies a null terminated array of FriendshipFunctions
 void friendshipArrCopy(FriendshipFunction* destination, FriendshipFunction* source) {
-    while (*destination != NULL) {
-        *source = *destination;
+    while (*source != NULL) {
+        *destination = *source;
         source++;
         destination++;
     }
@@ -58,7 +58,7 @@ void friendshipArrCopy(FriendshipFunction* destination, FriendshipFunction* sour
 // returns the length of a null termianted array of FriendshipFunctions
 size_t friendshipArrLength(FriendshipFunction* arr) {
     size_t i = 0;
-    while (*arr != NULL) {
+    while (arr[i] != NULL) {
         i++;
     }
     return i;
@@ -66,7 +66,7 @@ size_t friendshipArrLength(FriendshipFunction* arr) {
 
 size_t queueArrLength(IsraeliQueue* arr) {
     size_t i = 0;
-    while (*arr != NULL) {
+    while (arr[i] != NULL) {
         i++;
     }
     return i;
@@ -117,7 +117,7 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
 
-    size_t elements = elementCount(queue->dataArray) + 1;
+    size_t elements = elementCount(queue->dataArray);
     if (n < 0 || n >= elements) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
@@ -172,10 +172,7 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* element) {
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
     queue->dataArray[dataSize].value = NULL;
-    int friendshipCount = friendshipArrLength(queue->friendshipArray);
-    int elementLocation = dataSize - 1;
     queue->dataArray[dataSize - 1] = newElement;
-    bool skipped = false;
 
     IsraeliQueueError bumpError = bumpNthElement(queue, dataSize - 1, NULL);
     return bumpError;
@@ -338,7 +335,7 @@ bool areFriends(IsraeliQueue queue, IsraeliElement element1, IsraeliElement elem
     int friendshipCount = friendshipArrLength(queue->friendshipArray);
     FriendshipFunction* friendshipArray = queue->friendshipArray;
     for (int i = 0; i < friendshipCount; i++) {
-        if (friendshipArray[i](element1.value, element2.value) > queue->friendshipThreshold) {
+        if ((*friendshipArray[i])(element1.value, element2.value) > queue->friendshipThreshold) {
             return true;
         }
     }
