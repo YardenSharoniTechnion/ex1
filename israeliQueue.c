@@ -26,8 +26,8 @@ bool areFriends(IsraeliQueue queue, IsraeliElement element1, IsraeliElement elem
 double averageFriendship(IsraeliQueue queue, IsraeliElement element1, IsraeliElement element2);
 
 // returns the amount of items in an array of IsraeliElements
-int elementCount(IsraeliElement* arr) {
-    int i = 0;
+size_t elementCount(IsraeliElement* arr) {
+    size_t i = 0;
     while (arr[i].value != NULL) {
         i++;
     }
@@ -44,8 +44,8 @@ void elementArrCopy(IsraeliElement* destination, IsraeliElement* source) {
     return;
 }
 
-// copies a null terminated array of pointers
-void ptrcpy(void** destination, void** source) {
+// copies a null terminated array of FriendshipFunctions
+void friendshipArrCopy(FriendshipFunction* destination, FriendshipFunction* source) {
     while (*destination != NULL) {
         *source = *destination;
         source++;
@@ -55,8 +55,16 @@ void ptrcpy(void** destination, void** source) {
     return;
 }
 
-// returns the length of a null termianted array of pointers
-size_t ptrlen(void** arr) {
+// returns the length of a null termianted array of FriendshipFunctions
+size_t friendshipArrLength(FriendshipFunction* arr) {
+    size_t i = 0;
+    while (*arr != NULL) {
+        i++;
+    }
+    return i;
+}
+
+size_t queueArrLength(IsraeliQueue* arr) {
     size_t i = 0;
     while (*arr != NULL) {
         i++;
@@ -71,8 +79,8 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction* friendship, ComparisonFuncti
     }
     IsraeliQueue queue = malloc(sizeof(IsraeliQueue_t));
     assert(queue);
-    queue->friendshipArray = malloc(ptrlen(friendship) + 1);
-    ptrcpy(queue->friendshipArray, friendship);
+    queue->friendshipArray = malloc(friendshipArrLength(friendship) + 1);
+    friendshipArrCopy(queue->friendshipArray, friendship);
     queue->dataArray = malloc(sizeof(IsraeliElement));
     assert(queue->dataArray);
     queue->dataArray[0].value = NULL;
@@ -164,7 +172,7 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* element) {
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
     queue->dataArray[dataSize].value = NULL;
-    int friendshipCount = ptrlen(queue->friendshipArray);
+    int friendshipCount = friendshipArrLength(queue->friendshipArray);
     int elementLocation = dataSize - 1;
     queue->dataArray[dataSize - 1] = newElement;
     bool skipped = false;
@@ -177,7 +185,7 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, Friendshi
     if (queue == NULL) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
-    int functionsSize = ptrlen(queue->friendshipArray) + 1;
+    int functionsSize = friendshipArrLength(queue->friendshipArray) + 1;
     FriendshipFunction* oldFriendshipArr = queue->friendshipArray;
     queue->friendshipArray = realloc(queue->friendshipArray, functionsSize + 1);
     if (queue->friendshipArray == NULL) {
@@ -209,7 +217,7 @@ int IsraeliQueueSize(IsraeliQueue queue) {
     if (queue == NULL) {
         return 0;
     }
-    return elementCount(queue);
+    return elementCount(queue->dataArray);
 }
 
 void* IsraeliQueueDequeue(IsraeliQueue queue) {
@@ -226,8 +234,8 @@ void* IsraeliQueueDequeue(IsraeliQueue queue) {
 }
 
 bool IsraeliQueueContains(IsraeliQueue queue, void* element) {
-    int elementCount = elementcount(queue->dataArray);
-    for (int i = 0; i < elementCount; i++) {
+    int elements = elementCount(queue->dataArray);
+    for (int i = 0; i < elements; i++) {
         if (queue->comparisonFunction(queue->dataArray[i].value, element)) {
             return true;
         }
@@ -236,13 +244,16 @@ bool IsraeliQueueContains(IsraeliQueue queue, void* element) {
 }
 
 IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue) {
+    if (queue == NULL) {
+        return ISRAELIQUEUE_BAD_PARAM;
+    }
     size_t elements = elementCount(queue->dataArray);
     bool* alreadyBumped = malloc(elements * sizeof(bool));
     if (alreadyBumped == NULL) {
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
     int i = 0;
-    while (i < elementCount) {
+    while (i < elements) {
         if (alreadyBumped[i]) {
             i++;
             continue;
@@ -274,7 +285,7 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArr, ComparisonFunction functi
     if (queueArr == NULL) {
         return NULL;
     }
-    int queueCount = ptrlen(queueArr);
+    int queueCount = queueArrLength(queueArr);
     FriendshipFunction emptyFunctArray[1] = {NULL};
     int friendshipThreshold = 0;
     int rivalryThreshold = 1;
@@ -289,7 +300,7 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArr, ComparisonFunction functi
         if (queueArr[i]->friendshipArray == NULL) {
             return NULL;
         }
-        int functionCount = ptrlen(queueArr[i]->friendshipArray);
+        int functionCount = friendshipArrLength(queueArr[i]->friendshipArray);
         for (int j = 0; j < functionCount; j++) {
             IsraeliQueueAddFriendshipMeasure(newQueue, queueArr[i]->friendshipArray[j]);
         }
@@ -313,7 +324,7 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArr, ComparisonFunction functi
 }
 // returns the average friendship of 2 elements in an israeliQueue
 double averageFriendship(IsraeliQueue queue, IsraeliElement element1, IsraeliElement element2) {
-    int friendshipCount = ptrlen(queue->friendshipArray);
+    int friendshipCount = friendshipArrLength(queue->friendshipArray);
     FriendshipFunction* friendshipArray = queue->friendshipArray;
     int sum = 0;
     for (int i = 0; i < friendshipCount; i++) {
@@ -324,7 +335,7 @@ double averageFriendship(IsraeliQueue queue, IsraeliElement element1, IsraeliEle
 
 // returns whether the elements given in the queue are friends.
 bool areFriends(IsraeliQueue queue, IsraeliElement element1, IsraeliElement element2) {
-    int friendshipCount = ptrlen(queue->friendshipArray);
+    int friendshipCount = friendshipArrLength(queue->friendshipArray);
     FriendshipFunction* friendshipArray = queue->friendshipArray;
     for (int i = 0; i < friendshipCount; i++) {
         if (friendshipArray[i](element1.value, element2.value) > queue->friendshipThreshold) {
