@@ -2,8 +2,8 @@
 
 #include <assert.h>
 #include <math.h>
+#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 typedef struct {
     void* value;
@@ -35,23 +35,23 @@ size_t elementCount(IsraeliElement* arr) {
 }
 
 void elementArrCopy(IsraeliElement* destination, IsraeliElement* source) {
-    while (destination->value != NULL) {
-        *source = *destination;
-        source++;
-        destination++;
+    int i = 0;
+    while (source[i].value != NULL) {
+        destination[i] = source[i];
+        i++;
     }
-    destination->value = NULL;
+    destination[i].value = NULL;
     return;
 }
 
 // copies a null terminated array of FriendshipFunctions
 void friendshipArrCopy(FriendshipFunction* destination, FriendshipFunction* source) {
-    while (*source != NULL) {
-        *destination = *source;
-        source++;
-        destination++;
+    int i = 0;
+    while (source[i] != NULL) {
+        destination[i] = source[i];
+        i++;
     }
-    destination = NULL;
+    destination[i] = NULL;
     return;
 }
 
@@ -79,7 +79,8 @@ IsraeliQueue IsraeliQueueCreate(FriendshipFunction* friendship, ComparisonFuncti
     }
     IsraeliQueue queue = malloc(sizeof(IsraeliQueue_t));
     assert(queue);
-    queue->friendshipArray = malloc(friendshipArrLength(friendship) + 1);
+    queue->friendshipArray = malloc((friendshipArrLength(friendship) + 1) * sizeof(FriendshipFunction));
+    assert(queue->friendshipArray);
     friendshipArrCopy(queue->friendshipArray, friendship);
     queue->dataArray = malloc(sizeof(IsraeliElement));
     assert(queue->dataArray);
@@ -116,7 +117,6 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
     if (queue == NULL) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
-
     size_t elements = elementCount(queue->dataArray);
     if (n < 0 || n >= elements) {
         return ISRAELIQUEUE_BAD_PARAM;
@@ -129,18 +129,28 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
     for (int i = 0; i < elements; i++) {
         alreadyBlocked[i] = false;
     }
+    // special case for when n = 0.
+    if (res != NULL) {
+        *res = 0;
+    }
+    bool bumped = false;
     for (int i = 0; i < n; i++) {
         if (dataArray[i].skipCount < 1 || !areFriends(queue, dataArray[i], dataArray[n])) {
             continue;
         }
-        for (int j = i; j < elements; j++) {
+        bool foundEnemy = false;
+        for (int j = i; j < n; j++) {
             if (areEnemies(queue, dataArray[j], dataArray[n]) && dataArray[j].blockCount > 0) {
                 if (!alreadyBlocked[j]) {
                     dataArray[j].blockCount--;
                 }
                 alreadyBlocked[j] = true;
-                continue;
+                foundEnemy = true;
+                break;
             }
+        }
+        if (foundEnemy) {
+            continue;
         }
         if (res != NULL) {
             *res = i;
@@ -148,12 +158,16 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
         dataArray[i].skipCount--;
         IsraeliElement temp = dataArray[i];
         dataArray[i] = dataArray[n];
+        bumped = true;
         for (int j = i + 1; j <= n; j++) {
             IsraeliElement nextTemp = dataArray[j];
             dataArray[j] = temp;
             temp = nextTemp;
         }
         break;
+    }
+    if (!bumped && res != NULL) {
+        *res = n;
     }
     free(alreadyBlocked);
     return ISRAELIQUEUE_SUCCESS;
@@ -166,14 +180,16 @@ IsraeliQueueError IsraeliQueueEnqueue(IsraeliQueue queue, void* element) {
     IsraeliElement newElement = {element, FRIEND_QUOTA, RIVAL_QUOTA};
     size_t dataSize = elementCount(queue->dataArray) + 1;
     IsraeliElement* oldDataArr = queue->dataArray;
-    queue->dataArray = realloc(queue->dataArray, (dataSize + 1) * sizeof(IsraeliElement));
+    IsraeliElement* newDataArr = malloc((dataSize + 1) * sizeof(IsraeliElement));
+    queue->dataArray = newDataArr;
     if (queue->dataArray == NULL) {
         queue->dataArray = oldDataArr;
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
+    elementArrCopy(queue->dataArray, oldDataArr);
+    free((void*)oldDataArr);
     queue->dataArray[dataSize].value = NULL;
     queue->dataArray[dataSize - 1] = newElement;
-
     IsraeliQueueError bumpError = bumpNthElement(queue, dataSize - 1, NULL);
     return bumpError;
 }
@@ -184,11 +200,13 @@ IsraeliQueueError IsraeliQueueAddFriendshipMeasure(IsraeliQueue queue, Friendshi
     }
     int functionsSize = friendshipArrLength(queue->friendshipArray) + 1;
     FriendshipFunction* oldFriendshipArr = queue->friendshipArray;
-    queue->friendshipArray = realloc(queue->friendshipArray, functionsSize + 1);
+    queue->friendshipArray = malloc((functionsSize + 1)*sizeof(FriendshipFunction));
     if (queue->friendshipArray == NULL) {
         queue->friendshipArray = oldFriendshipArr;
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
+    friendshipArrCopy(queue->friendshipArray, oldFriendshipArr);
+    free(oldFriendshipArr);
     queue->friendshipArray[functionsSize] = NULL;
     queue->friendshipArray[functionsSize - 1] = function;
     return ISRAELIQUEUE_SUCCESS;
@@ -221,7 +239,7 @@ void* IsraeliQueueDequeue(IsraeliQueue queue) {
     if (queue == NULL || queue->dataArray == NULL || elementCount(queue->dataArray) < 1) {
         return NULL;
     }
-    IsraeliElement* newDataArray = malloc(elementCount(queue->dataArray));
+    IsraeliElement* newDataArray = malloc(elementCount(queue->dataArray)*sizeof(IsraeliElement));
     assert(newDataArray);
     elementArrCopy(newDataArray, queue->dataArray + 1);
     IsraeliElement firstElement = queue->dataArray[0];
@@ -245,36 +263,38 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue) {
         return ISRAELIQUEUE_BAD_PARAM;
     }
     size_t elements = elementCount(queue->dataArray);
-    bool* alreadyBumped = malloc(elements * sizeof(bool));
-    if (alreadyBumped == NULL) {
+    int* locations = malloc(elements * sizeof(int));
+    if (locations == NULL) {
         return ISRAELIQUEUE_ALLOC_FAILED;
     }
-    int i = 0;
-    while (i < elements) {
-        if (alreadyBumped[i]) {
-            i++;
-            continue;
+    for (int i = 0; i < elements; i++) {
+        locations[i] = i;
+    }
+    for (int i = elements - 1; i >= 0; i--) {
+        int iInArray = -1;
+        // the position of this element in the array
+        for (int j = 0; j < elements; j++) {
+            if (locations[j] == i) {
+                iInArray = j;
+                break;
+            }
         }
         int res = -1;
-        bool temp = alreadyBumped[i];
-        IsraeliQueueError bumpError = bumpNthElement(queue, i, &res);
+        IsraeliQueueError bumpError = bumpNthElement(queue, iInArray, &res);
         if (bumpError != ISRAELIQUEUE_SUCCESS) {
-            free(alreadyBumped);
+            free(locations);
             return bumpError;
         }
-        // shift the array to accomadate moving of the element
-        for (int j = res + 1; j <= i; j++) {
-            bool nextTemp = alreadyBumped[j];
-            alreadyBumped[j] = temp;
-            temp = nextTemp;
-        }
-        // and make the element already bumped
-        alreadyBumped[res] = true;
-        if (res == i) {
-            i++;
+        int temp = locations[res];
+        locations[res] = locations[iInArray];
+        // shift locations array
+        for (int j = res + 1; j <= iInArray; j++) {
+            int nextTemp = locations[j];
+            locations[j] = temp;
+            temp = nextTemp;  // TODO FIX THIS DUMB FUCKING BULLSHIT
         }
     }
-    free(alreadyBumped);
+    free(locations);
     return ISRAELIQUEUE_SUCCESS;
 }
 
@@ -291,7 +311,7 @@ IsraeliQueue IsraeliQueueMerge(IsraeliQueue* queueArr, ComparisonFunction functi
         rivalryThreshold *= queueArr[i]->rivalryThreshold;
     }
     friendshipThreshold /= queueCount;
-    rivalryThreshold = ceil(pow(rivalryThreshold, ((double)1) / queueCount));
+    rivalryThreshold = 2; //ceil(pow(rivalryThreshold, ((double)1) / queueCount));
     IsraeliQueue newQueue = IsraeliQueueCreate(emptyFunctArray, function, friendshipThreshold, rivalryThreshold);
     for (int i = 0; i < queueCount; i++) {
         if (queueArr[i]->friendshipArray == NULL) {
