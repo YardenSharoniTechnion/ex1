@@ -152,7 +152,7 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
         if (foundEnemy) {
             continue;
         }
-        int newSpot = i - 1;
+        int newSpot = i + 1;
         if (res != NULL) {
             *res = newSpot;
         }
