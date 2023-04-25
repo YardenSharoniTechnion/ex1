@@ -179,7 +179,7 @@ IsraeliQueueError moveToLast(IsraeliQueue queue, int n) {
     int elements = elementCount(queue->dataArray);
     IsraeliElement last = queue->dataArray[n];
     IsraeliElement temp = queue->dataArray[elements - 1];
-    for (int i = elements - 1; i >= n; i++) {
+    for (int i = elements - 1; i >= n; i--) {
         IsraeliElement newTemp = queue->dataArray[i];
         queue->dataArray[i] = temp;
         temp = newTemp;
