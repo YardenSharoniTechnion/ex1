@@ -152,14 +152,15 @@ IsraeliQueueError bumpNthElement(IsraeliQueue queue, int n, int* res) {
         if (foundEnemy) {
             continue;
         }
+        int newSpot = i-1;
         if (res != NULL) {
-            *res = i;
+            *res = newSpot;
         }
         dataArray[i].skipCount--;
-        IsraeliElement temp = dataArray[i];
-        dataArray[i] = dataArray[n];
+        IsraeliElement temp = dataArray[newSpot];
+        dataArray[newSpot] = dataArray[n];
         bumped = true;
-        for (int j = i + 1; j <= n; j++) {
+        for (int j = newSpot + 1; j <= n; j++) {
             IsraeliElement nextTemp = dataArray[j];
             dataArray[j] = temp;
             temp = nextTemp;
