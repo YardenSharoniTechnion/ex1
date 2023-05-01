@@ -5,6 +5,9 @@
 #include <stdlib.h>
 #include "IsraeliQueue.h"
 
+#define FRIENDSHIP 20
+#define ENEMIES 0
+
 typedef struct EnrollmentSystem_t * EnrollmentSystem;
 
 
