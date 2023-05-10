@@ -96,6 +96,7 @@ IsraeliQueue IsraeliQueueClone(IsraeliQueue q) {
                                             q->friendshipThreshold, q->rivalryThreshold);
     assert(queue);
     if (q->dataArray != NULL) {
+        free(queue->dataArray);
         queue->dataArray = malloc((elementCount(q->dataArray) + 1) * sizeof(IsraeliElement));
         elementArrCopy(queue->dataArray, q->dataArray);
     } else {
@@ -296,6 +297,10 @@ IsraeliQueueError IsraeliQueueImprovePositions(IsraeliQueue queue) {
         }
         int res = -1;
         IsraeliQueueError lastError = moveToLast(queue, iInArray);
+        if (lastError != ISRAELIQUEUE_SUCCESS) {
+            free(locations);
+            return lastError;
+        }
         IsraeliQueueError bumpError = bumpNthElement(queue, elements-1, &res);
         if (bumpError != ISRAELIQUEUE_SUCCESS) {
             free(locations);
