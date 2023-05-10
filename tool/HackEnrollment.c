@@ -1,4 +1,4 @@
-#include "HackerEnrollment.h"
+#include "HackEnrollment.h"
 
 #include <assert.h>
 
@@ -201,12 +201,12 @@ int hackerDiff(void* student1, void* student2) {
         return HACKERNEUTRAL;
     }
     for (int i = 0; i < hackerStudent->hacker->friendCount; i++) {
-        if (hackerStudent->hacker->friendIds[i]) {
+        if (hackerStudent->hacker->friendIds[i] == otherStudent->id) {
             return HACKERFRIEND;
         }
     }
     for (int i = 0; i < hackerStudent->hacker->enemyCount; i++) {
-        if (hackerStudent->hacker->enemyIds[i]) {
+        if (hackerStudent->hacker->enemyIds[i] == otherStudent->id) {
             return HACKERENEMY;
         }
     }
@@ -323,7 +323,6 @@ Hacker* readHacker(FILE* input) {
         return NULL;
     }
     int courseCount, friendCount, enemyCount;
-    int sum = 0;
     res->courses = getInts(input, &courseCount, '\n');
     res->friendIds = getInts(input, &friendCount, '\n');
     res->enemyIds = getInts(input, &enemyCount, '\n');

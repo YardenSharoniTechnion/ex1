@@ -3,7 +3,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "IsraeliQueue.h"
+#include "../IsraeliQueue.h"
 
 #define FRIENDSHIP 20
 #define ENEMIES 0
